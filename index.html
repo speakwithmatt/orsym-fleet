@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orsym Fleet</title>
+<meta name="description" content="Every solar system you've installed, in one place.">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="mark" fill="#FF7A1A">
+    <circle cx="68" cy="30" r="20.5"/><circle cx="30" cy="67" r="20.5"/><circle cx="91.5" cy="83" r="24"/>
+    <path d="M40,58 C50,62 52,72 60,72 C66,72 70,66 80,70 L80,94 C70,86 66,79 58,79 C50,79 46,82 38,78 Z"/>
+  </g>
+</defs></svg>
+
+<div id="gate" class="gate" hidden></div>
+
+<div class="shell" id="shell" hidden>
+  <nav class="side" id="side" aria-label="Main">
+    <div class="logo"><svg viewBox="8 8 112 102" aria-hidden="true"><use href="#mark"/></svg>Orsym<small>Fleet</small></div>
+    <div class="org"><b id="orgname"></b><span id="whoami"></span></div>
+    <div id="navlist" style="display:contents"></div>
+    <div class="side-foot">
+      <span>Prototype. Emails and inverter syncing aren't switched on yet.</span>
+    </div>
+  </nav>
+  <main class="main" id="main">
+    <div class="banner"><b>Prototype</b><span>Changes you make are saved for your whole team.</span><button class="reset" data-signout="1" type="button" style="margin-left:auto">Sign out</button></div>
+    <div class="page" id="page"></div>
+  </main>
+</div>
+<div id="drawer-root"></div>
+<div id="toast-root"></div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
