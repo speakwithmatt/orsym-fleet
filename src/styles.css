@@ -36,7 +36,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .side{background:var(--side);border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
 .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:1.2rem;color:var(--ink);letter-spacing:-.04em;padding:0 8px 14px}
 .logo svg{width:26px;height:24px;flex:none}
-.logo small{font-size:.75rem;font-weight:600;letter-spacing:.02em;color:var(--muted);border-left:1px solid var(--line);padding-left:9px}
+.logo small{white-space:nowrap;font-size:.75rem;font-weight:600;letter-spacing:.02em;color:var(--muted);border-left:1px solid var(--line);padding-left:9px}
 .org{margin:0 4px 12px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
 .org b{display:block;color:var(--ink);font-size:.86rem}
 .org span{font-size:.75rem;color:var(--muted)}
