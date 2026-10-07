@@ -40,9 +40,11 @@ export async function syncOrg(admin: SupabaseClient, orgId: string, sg: Sungrow)
     const kw = cap != null ? qty(cap, "W") : (num(st.design_capacity) != null ? +(num(st.design_capacity)! / 1000).toFixed(3) : null);
     return {
       ext, name: String(first(st, "ps_name", "psName") ?? `Sungrow ${ext}`),
-      address: first(st, "ps_location", "address"),
+      address: first(st, "ps_location", "location", "address"),
       kw, todayKwh: qty(first(st, "today_energy", "today_power", "daily_energy"), "Wh"),
       status: s.status, raw: s.raw, faultTitle: s.title, faultSev: s.sev,
+      // A newly built plant: not grid-connected yet and no energy ever recorded.
+      pending: String(st.grid_connection_status) === "0" && num((st.total_energy as any)?.value ?? st.total_energy) == null,
     };
   });
   return saveStations(admin, orgId, { provider: "Sungrow", source: "sungrow", brand: "Sungrow" }, stations);

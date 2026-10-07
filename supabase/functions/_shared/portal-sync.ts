@@ -14,6 +14,7 @@ export type Station = {
   raw: string | null; // the portal's own status, kept for checking the mapping
   faultTitle?: string;
   faultSev?: "critical" | "warning";
+  pending?: boolean; // set up in the portal but has never sent any data
 };
 export type Portal = { provider: string; source: string; brand: string };
 
@@ -53,6 +54,7 @@ export async function saveStations(admin: SupabaseClient, orgId: string, p: Port
     // Overnight "offline" is normal; keep whatever we last knew.
     if (status === "Offline" && !daylight) status = prev?.status ?? "Online";
     const faultTitle = st.faultTitle ?? `${p.brand} reports "${st.raw}"`;
+    const waiting = status === "Offline" && st.pending;
     const row: Record<string, unknown> = {
       org_id: orgId, source: p.source, external_id: st.ext, name: st.name, brand: p.brand,
       kw: st.kw, exp_kwh: st.kw ? +(st.kw * 3.9).toFixed(2) : null, status, portal_status: st.raw,
@@ -76,8 +78,8 @@ export async function saveStations(admin: SupabaseClient, orgId: string, p: Port
     // A new problem since last sync opens an alert.
     if (status !== "Online" && prev?.status !== status) {
       await admin.from("alerts").insert({
-        org_id: orgId, system_id: id, sev: status === "Offline" ? "critical" : (st.faultSev ?? "warning"),
-        title: status === "Offline" ? `Not reporting to ${p.provider}` : faultTitle,
+        org_id: orgId, system_id: id, sev: waiting ? "warning" : status === "Offline" ? "critical" : (st.faultSev ?? "warning"),
+        title: waiting ? `Waiting for first data from ${p.provider}` : status === "Offline" ? `Not reporting to ${p.provider}` : faultTitle,
         detail: `${p.provider} portal`,
       });
     }

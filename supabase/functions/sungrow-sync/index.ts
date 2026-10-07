@@ -25,6 +25,12 @@ Deno.serve(async (req) => {
       try { return json({ ok: true, server: await sg.loginAnyRegion() }) }
       catch (e) { return json({ ok: false, kind: (e as SungrowError).kind, error: String((e as Error).message), reply: { ...sg.lastLogin, result_data: sg.lastLogin?.result_data && { ...sg.lastLogin.result_data, token: undefined } } }) }
     }
+    // Diagnostic: the raw plant list for one org, to check field mapping.
+    if (body.inspect) {
+      const c = await credentials(admin, String(body.inspect));
+      if (!c) return json({ error: "not connected" });
+      return json(await new Sungrow(c.account, c.password, String(c.server ?? "au")).plants());
+    }
     const { data: rows } = await admin.from("connection_secrets").select("org_id").eq("provider", "Sungrow");
     orgIds = (rows ?? []).map((r) => r.org_id);
   } else {
