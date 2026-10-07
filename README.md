@@ -13,6 +13,7 @@ This is the first live prototype. It's the clickable demo's screens running on r
 - **Edge functions** (`supabase/functions/`):
   - `invite-member`: sends team invites. It is deployed.
   - `goodwe-connect` and `goodwe-sync`: an installer connects their GoodWe SEMS login (stored encrypted), and every plant on it is pulled into Systems with status and today's kWh. A cron job (`supabase/migrations/20261007000100_goodwe_cron.sql`) syncs every 15 minutes. These use the SEMS+ portal's own web endpoints, which are undocumented and may change.
+  - `claude-connect` and `claude-ask`: a business connects its own Anthropic API key (stored encrypted), then Ask Claude answers questions from that business's fleet data, read with the asking person's own login.
   - `enphase-connect` and `enphase-sync`: Enphase OAuth and a sync every 15 minutes. These are written but not deployed until Orsym has Enphase developer keys.
 
 ## How it works

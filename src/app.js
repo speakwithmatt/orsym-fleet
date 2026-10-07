@@ -12,7 +12,7 @@ const byId = id => D.systems.find(s=>s.id===id);
 
 /* ---------- state ---------- */
 const S = { view:"overview", q:"", fBrand:"", fStatus:"", fPlan:"", fType:"", sort:"id", dir:1, page:0, alertTab:"open", planTab:"all", jobTab:"schedule", rules:null };
-const VIEWS = [["overview","Overview"],["systems","Systems"],["alerts","Alerts"],["jobs","Service jobs"],["plans","Service plans"],["stock","Stock and warranty"],["connections","Connections"],["team","Team"]];
+const VIEWS = [["overview","Overview"],["claude","Ask Claude"],["systems","Systems"],["alerts","Alerts"],["jobs","Service jobs"],["plans","Service plans"],["stock","Stock and warranty"],["connections","Connections"],["team","Team"]];
 
 function statusChip(st){const c={Online:"s-good",Underperforming:"s-warn",Offline:"s-bad",Fault:"s-bad"}[st]; return '<span class="chip '+c+'">'+st+'</span>'}
 function planChip(p){ if(p==="None") return '<span class="chip plain muted">No plan</span>'; return '<span class="chip plain s-orange">'+p+'</span>'}
@@ -392,10 +392,61 @@ function vConnections(){
   const inv=pick(["GoodWe","Sungrow","Sigenergy"],"Inverter portal"), other=pick(["Claude"],"AI assistant");
   const count=n=>D.systems.filter(s=>s.brand===n&&s.source!=="sample").length;
   const card=x=>{const n=x.kind==="Inverter portal"?count(x.name):null; return '<div class="conn"><span class="mark">'+esc(x.name.replace(/[^A-Za-z]/g,"").slice(0,2))+'</span><span style="min-width:0"><b style="color:var(--ink)">'+esc(x.name)+'</b><span class="muted" style="display:block;font-size:.78rem">'+esc(x.kind)+(n!=null?' · '+n+' systems':'')+(x.syncedAt?' · last sync '+rel(x.syncedAt):'')+(x.error?' · '+esc(x.error):'')+'</span></span><span class="acts-row">'+
-    (x.name==="GoodWe"&&x.state!=="Not connected"?'<button class="btn sm" data-gwsync="1" type="button">Sync now</button>'+(x.state==="Reconnect needed"?'<button class="btn sm primary" data-connect="GoodWe" type="button">Reconnect</button>':'<span class="chip s-good">Connected</span>')+(CTX.role!=="member"?'<button class="btn sm" data-gwdisconnect="1" type="button">Disconnect</button>':''):
-     x.state==="Connected"?'<span class="chip s-good">Connected</span>':x.state==="Reconnect needed"?'<button class="btn sm primary" data-connect="'+esc(x.name)+'" type="button">Reconnect</button>':(x.name==="Enphase"||x.name==="GoodWe")?'<button class="btn sm primary" data-connect="'+esc(x.name)+'" type="button">Connect</button>':'<span class="chip plain muted">Coming soon</span>')+'</span></div>'};
-  return head("Connections","Orsym Fleet reads from the tools you already use. GoodWe is live; other portals follow as API access is set up.")+
+    (x.name==="Claude"&&x.state==="Connected"?'<button class="btn sm" data-nav="claude" type="button">Ask Claude</button><span class="chip s-good">Connected</span>'+(CTX.role!=="member"?'<button class="btn sm" data-cldisconnect="1" type="button">Disconnect</button>':''):
+     x.name==="GoodWe"&&x.state!=="Not connected"?'<button class="btn sm" data-gwsync="1" type="button">Sync now</button>'+(x.state==="Reconnect needed"?'<button class="btn sm primary" data-connect="GoodWe" type="button">Reconnect</button>':'<span class="chip s-good">Connected</span>')+(CTX.role!=="member"?'<button class="btn sm" data-gwdisconnect="1" type="button">Disconnect</button>':''):
+     x.state==="Connected"?'<span class="chip s-good">Connected</span>':x.state==="Reconnect needed"?'<button class="btn sm primary" data-connect="'+esc(x.name)+'" type="button">Reconnect</button>':(x.name==="Claude"||x.name==="GoodWe")?'<button class="btn sm primary" data-connect="'+esc(x.name)+'" type="button">Connect</button>':'<span class="chip plain muted">Coming soon</span>')+'</span></div>'};
+  return head("Connections","Orsym Fleet reads from the tools you already use. GoodWe and Claude are live; Sungrow and Sigenergy are next.")+
   '<div class="grid g-2e"><section class="card"><div class="card-h"><h2>Inverter portals</h2></div><div style="margin-top:6px">'+inv.map(card).join("")+'</div></section><section class="card"><div class="card-h"><h2>Software</h2></div><div style="margin-top:6px">'+other.map(card).join("")+'</div></section></div>';
+}
+
+/* ---------- Ask Claude ---------- */
+
+const CHAT=[]; let ASKING=false;
+const ASK_IDEAS=["Which systems need attention this week?","Who is overdue for a service?","Which customers without a plan should I offer one to?","Draft a friendly service reminder for my next due customer"];
+// Claude's reply as light HTML: bold, bullet lists, tables, and SYS refs that open the system.
+function md(text){
+  const inline=t=>esc(t).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/`([^`]+)`/g,"<code>$1</code>")
+    .replace(/\bSYS-\d+\b/g,r=>byId(r)?'<button class="ref" data-sys="'+r+'" type="button">'+r+'</button>':r);
+  const out=[]; const lines=text.split("\n");
+  for(let i=0;i<lines.length;i++){
+    const l=lines[i];
+    if(/^\s*\|/.test(l)){ const rows=[]; while(i<lines.length&&/^\s*\|/.test(lines[i])) rows.push(lines[i++]); i--;
+      const cells=r=>r.trim().replace(/^\||\|$/g,"").split("|").map(c=>c.trim());
+      const body=rows.filter(r=>!/^\s*\|[\s:|-]+\|\s*$/.test(r));
+      out.push('<div class="tbl-wrap"><table>'+body.map((r,k)=>'<tr>'+cells(r).map(c=>k?'<td>'+inline(c)+'</td>':'<th>'+inline(c)+'</th>').join("")+'</tr>').join("")+'</table></div>'); continue }
+    if(/^\s*([-*]|\d+\.)\s+/.test(l)){ const items=[]; const ol=/^\s*\d+\./.test(l); while(i<lines.length&&/^\s*([-*]|\d+\.)\s+/.test(lines[i])) items.push(lines[i++].replace(/^\s*([-*]|\d+\.)\s+/,"")); i--;
+      out.push((ol?'<ol>':'<ul>')+items.map(t=>'<li>'+inline(t)+'</li>').join("")+(ol?'</ol>':'</ul>')); continue }
+    if(/^#{1,4}\s/.test(l)){ out.push('<p><b>'+inline(l.replace(/^#+\s/,""))+'</b></p>'); continue }
+    if(l.trim()) out.push('<p>'+inline(l)+'</p>');
+  }
+  return out.join("");
+}
+function claudeConn(){ return D.conns.find(c=>c.name==="Claude") }
+function vClaude(){
+  const c=claudeConn(), on=c&&c.state==="Connected";
+  if(!on) return head("Ask Claude","Ask questions about your fleet in plain English, or get Claude to draft customer messages.")+
+    '<section class="card" style="padding:22px;display:grid;gap:12px;max-width:620px"><h2>Connect Claude to get started</h2><p class="muted">'+(c&&c.state==="Reconnect needed"?"Claude's API key stopped working. Connect it again with a current key.":"Claude reads your systems, alerts, jobs and plans, and answers using only what you can see in Fleet.")+'</p>'+
+    (CTX.role!=="member"?'<div><button class="btn primary" data-connect="Claude" type="button">Connect Claude</button></div>':'<p class="hint">Ask an owner or admin to connect Claude under Connections.</p>')+'</section>';
+  const msgs=CHAT.map(m=>m.role==="user"?'<div class="msg me">'+esc(m.content).replace(/\n/g,"<br>")+'</div>':'<div class="msg ai'+(m.error?' err':'')+'">'+(m.error?esc(m.content):md(m.content))+'</div>').join("")+
+    (ASKING?'<div class="msg ai thinking" aria-live="polite">Claude is looking through your fleet…</div>':'');
+  return head("Ask Claude","Claude answers from your live fleet data. It can't send emails or change anything yet.",CHAT.length?'<button class="btn sm" data-clnew="1" type="button">New chat</button>':'')+
+  '<section class="card chat"><div class="chat-log" id="chatlog">'+(msgs||'<div class="chat-empty"><p class="muted">Try asking</p><div class="ideas">'+ASK_IDEAS.map(q=>'<button class="btn sm" data-askidea="'+esc(q)+'" type="button">'+esc(q)+'</button>').join("")+'</div></div>')+'</div>'+
+  '<form id="askForm" class="chat-in"><textarea class="input" id="ask-q" rows="2" placeholder="Ask about your fleet…" aria-label="Ask Claude"'+(ASKING?' disabled':'')+'></textarea><button class="btn primary" type="submit"'+(ASKING?' disabled':'')+'>Ask</button></form></section>';
+}
+async function ask(q){
+  q=q.trim(); if(!q||ASKING) return;
+  CHAT.push({role:"user",content:q}); ASKING=true; render(true); scrollChat();
+  try{ const r=await db.askClaude(CTX.org.id,CHAT.filter(m=>!m.error).map(({role,content})=>({role,content}))); CHAT.push({role:"assistant",content:r.text||"(No answer)"}) }
+  catch(err){ CHAT.push({role:"assistant",content:err.message||String(err),error:true}); if(/API key/.test(err.message||"")) await reload().catch(()=>{}) }
+  ASKING=false; if(S.view==="claude"){ render(true); scrollChat(); const t=document.getElementById("ask-q"); if(t) t.focus() }
+}
+function scrollChat(){ const l=document.getElementById("chatlog"); if(l) l.scrollTop=l.scrollHeight; const m=document.getElementById("main"); m.scrollTop=m.scrollHeight }
+function openClaude(){
+  document.getElementById("drawer-root").innerHTML='<div class="scrim" data-close="1"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="Connect Claude"><div class="dr-head"><div class="top"><div><h1 style="font-size:1.3rem">Connect Claude</h1><p class="muted">Paste an API key from your Anthropic account. Your whole team can then use Ask Claude, and usage is billed to that account.</p></div><button class="x" data-close="1" type="button" aria-label="Close">×</button></div></div>'+
+  '<form class="dr-body" id="clForm" style="display:grid;gap:10px"><label class="fld"><span>Anthropic API key</span><input class="input" id="cl-key" type="password" required autocomplete="off" placeholder="sk-ant-…"></label>'+
+  '<p class="hint">Create one at console.anthropic.com under API keys. The key is encrypted and only Fleet\'s server can read it.</p>'+
+  '<div class="acts-row"><button class="btn primary" type="submit">Connect</button><button class="btn" data-close="1" type="button">Cancel</button></div><p class="err" id="cl-err"></p></form></aside>';
+  document.getElementById("cl-key").focus();
 }
 
 /* ---------- welcome (empty account) ---------- */
@@ -531,11 +582,11 @@ function openSys(id){
 function closeDrawer(){document.getElementById("drawer-root").innerHTML=""}
 
 /* ---------- render + events ---------- */
-const RENDER={overview:vOverview,systems:vSystems,alerts:vAlerts,jobs:vJobs,plans:vPlans,stock:vStock,connections:vConnections,team:vTeam};
+const RENDER={overview:vOverview,claude:vClaude,systems:vSystems,alerts:vAlerts,jobs:vJobs,plans:vPlans,stock:vStock,connections:vConnections,team:vTeam};
 function render(keepScroll){
   renderNav();
   const m=document.getElementById("main"), y=m.scrollTop;
-  document.getElementById("page").innerHTML=(!D.systems.length&&!["team","connections"].includes(S.view))?vWelcome():RENDER[S.view]();
+  document.getElementById("page").innerHTML=(!D.systems.length&&!["team","connections","claude"].includes(S.view))?vWelcome():RENDER[S.view]();
   m.scrollTop = keepScroll? y : 0;
   const open=document.querySelector(".drawer[data-sysid]"); if(open) openSys(open.dataset.sysid);
 }
@@ -574,9 +625,13 @@ function onClick(e){
   if(d.offerall){ const l=D.systems.filter(s=>s.plan==="None"&&s.status!=="Offline"&&!s.offer).sort((a,b)=>b.kw-a.kw).slice(0,10); l.forEach(s=>s.offer=TODAY); toast(l.length+" plan offers marked as sent (prototype: no email sent yet)"); render(true); return }
   if(d.book){ const s=byId(d.book); const j=newJob(s,s.type==="Commercial"?"Commercial service + report":"Annual clean and check",s.type==="Commercial"?"commercial":"annual",addDays(TODAY,14)); render(true); openSched(j.id); return }
   if(d.connect==="GoodWe"){ openGoodWe(); return }
+  if(d.connect==="Claude"){ openClaude(); return }
+  if(d.askidea){ ask(d.askidea); return }
+  if(d.clnew){ CHAT.length=0; render(); return }
+  if(d.cldisconnect){ if(!confirm("Disconnect Claude? Ask Claude stops working until it's connected again.")) return; busy(t,"…",async()=>{ await db.disconnectClaude(CTX.org.id); await reload(); render(true); toast("Claude disconnected") }); return }
   if(d.gwsync){ busy(t,"Syncing…",async()=>{ const r=await db.syncGoodWe(CTX.org.id); if(r&&r.error) throw new Error(r.error); await reload(); render(true); toast("GoodWe synced: "+(r.stations??0)+" systems"+(r.created?", "+r.created+" new":"")) }); return }
   if(d.gwdisconnect){ if(!confirm("Disconnect GoodWe? Systems already pulled in stay in Fleet but stop updating.")) return; busy(t,"…",async()=>{ await db.disconnectGoodWe(CTX.org.id); await reload(); render(true); toast("GoodWe disconnected") }); return }
-  if(d.connect){ if(d.connect!=="Enphase"){ toast(d.connect+" is coming soon"); return } busy(t,"Opening…",async()=>{ const r=await db.startEnphase(CTX.org.id); if(r&&r.url) location.href=r.url; else toast("Enphase isn't set up on the server yet") }).catch(()=>{}); return }
+  if(d.connect){ toast(d.connect+" is coming soon"); return }
   if(d.sample){ busy(t,"Loading sample data…",async()=>{ await loadSample(); toast(D.systems.length+" sample systems loaded"); render() }); return }
   if(d.clearsample){ if(!confirm("Remove all sample systems, alerts, jobs and contractors?")) return; busy(t,"Clearing…",async()=>{ await db.clearSample(CTX.org.id); await reload(); toast("Sample data cleared"); render() }); return }
   if(d.import){ const inp=document.createElement("input"); inp.type="file"; inp.accept=".csv,text/csv"; inp.onchange=()=>{ if(inp.files[0]) importCSV(inp.files[0]).catch(err=>toast(err.message||String(err))) }; inp.click(); return }
@@ -597,6 +652,10 @@ function onSubmit(e){
   if(f.id==="gwForm"){ btn.disabled=true; btn.textContent="Connecting…"; document.getElementById("gw-err").textContent="";
     db.connectGoodWe(CTX.org.id,v("gw-account"),v("gw-password")).then(async r=>{ closeDrawer(); await reload(); go("systems"); toast("GoodWe connected: "+r.stations+" systems found") })
       .catch(err=>{ document.getElementById("gw-err").textContent=err.message||String(err); btn.disabled=false; btn.textContent="Connect" }); return }
+  if(f.id==="askForm"){ ask(v("ask-q")); return }
+  if(f.id==="clForm"){ btn.disabled=true; btn.textContent="Checking key…"; document.getElementById("cl-err").textContent="";
+    db.connectClaude(CTX.org.id,v("cl-key")).then(async()=>{ closeDrawer(); await reload(); go("claude"); toast("Claude connected") })
+      .catch(err=>{ document.getElementById("cl-err").textContent=err.message||String(err); btn.disabled=false; btn.textContent="Connect" }); return }
   if(f.id==="inviteForm"){ busy(btn,"Sending…",async()=>{ const email=v("inv-email"); const r=await db.invite(CTX.org.id,email,v("inv-role")); toast(r.emailed?"Invite emailed to "+email:"Invite saved. "+email+" gets access when they sign in with that email"); await refreshTeam() }); return }
   if(f.id==="personForm"){ busy(btn,"Adding…",async()=>{ const name=v("p-name").trim(), kind=v("p-kind"); let key=name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"person"; while(TEAM.some(p=>p.id===key)) key+="-2";
     const p={id:key,name,kind,role:kind==="team"?"Technician":"Contractor",cal:"Google Calendar",email:v("p-email").trim()}; await db.savePeople(CTX.org.id,[p]); TEAM.push(p); render(true); toast(name+" added") }); return }
@@ -624,6 +683,7 @@ export async function startApp(ctx){
   document.addEventListener("submit",onSubmit);
   document.addEventListener("keydown",e=>{
     if(e.key==="Escape") closeDrawer();
+    if(e.key==="Enter"&&!e.shiftKey&&e.target.id==="ask-q"){ e.preventDefault(); ask(e.target.value); return }
     if(e.key==="Enter"&&e.target.matches("tr[data-sys]")) openSys(e.target.dataset.sys);
   });
   document.addEventListener("input",e=>{ if(e.target.id==="q"){ S.q=e.target.value; S.page=0; const pos=e.target.selectionStart; render(true); const q=document.getElementById("q"); q.focus(); q.setSelectionRange(pos,pos) } });
