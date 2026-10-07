@@ -387,14 +387,15 @@ function vStock(){
 }
 
 function vConnections(){
-  const c=D.conns;
-  const inv=c.filter(x=>x.kind==="Inverter portal"), other=c.filter(x=>x.kind!=="Inverter portal");
+  // Only these show, in this order. A provider with no row yet shows as Not connected.
+  const pick=(names,kind)=>names.map(n=>D.conns.find(x=>x.name===n)||{name:n,kind,state:"Not connected"});
+  const inv=pick(["GoodWe","Sungrow","Sigenergy"],"Inverter portal"), other=pick(["Claude"],"AI assistant");
   const count=n=>D.systems.filter(s=>s.brand===n&&s.source!=="sample").length;
   const card=x=>{const n=x.kind==="Inverter portal"?count(x.name):null; return '<div class="conn"><span class="mark">'+esc(x.name.replace(/[^A-Za-z]/g,"").slice(0,2))+'</span><span style="min-width:0"><b style="color:var(--ink)">'+esc(x.name)+'</b><span class="muted" style="display:block;font-size:.78rem">'+esc(x.kind)+(n!=null?' · '+n+' systems':'')+(x.syncedAt?' · last sync '+rel(x.syncedAt):'')+(x.error?' · '+esc(x.error):'')+'</span></span><span class="acts-row">'+
     (x.name==="GoodWe"&&x.state!=="Not connected"?'<button class="btn sm" data-gwsync="1" type="button">Sync now</button>'+(x.state==="Reconnect needed"?'<button class="btn sm primary" data-connect="GoodWe" type="button">Reconnect</button>':'<span class="chip s-good">Connected</span>')+(CTX.role!=="member"?'<button class="btn sm" data-gwdisconnect="1" type="button">Disconnect</button>':''):
      x.state==="Connected"?'<span class="chip s-good">Connected</span>':x.state==="Reconnect needed"?'<button class="btn sm primary" data-connect="'+esc(x.name)+'" type="button">Reconnect</button>':(x.name==="Enphase"||x.name==="GoodWe")?'<button class="btn sm primary" data-connect="'+esc(x.name)+'" type="button">Connect</button>':'<span class="chip plain muted">Coming soon</span>')+'</span></div>'};
   return head("Connections","Orsym Fleet reads from the tools you already use. GoodWe is live; other portals follow as API access is set up.")+
-  '<div class="grid g-2e"><section class="card"><div class="card-h"><h2>Inverter portals</h2></div><div style="margin-top:6px">'+inv.map(card).join("")+'</div></section><section class="card"><div class="card-h"><h2>Accounting and jobs</h2></div><div style="margin-top:6px">'+other.map(card).join("")+'</div></section></div>';
+  '<div class="grid g-2e"><section class="card"><div class="card-h"><h2>Inverter portals</h2></div><div style="margin-top:6px">'+inv.map(card).join("")+'</div></section><section class="card"><div class="card-h"><h2>Software</h2></div><div style="margin-top:6px">'+other.map(card).join("")+'</div></section></div>';
 }
 
 /* ---------- welcome (empty account) ---------- */
