@@ -14,6 +14,7 @@ This is the first live prototype. It's the clickable demo's screens running on r
   - `invite-member`: sends team invites. It is deployed.
   - `goodwe-connect` and `goodwe-sync`: an installer connects their GoodWe SEMS login (stored encrypted), and every plant on it is pulled into Systems with status and today's kWh. A cron job (`supabase/migrations/20261007000100_goodwe_cron.sql`) syncs every 15 minutes. These use the SEMS+ portal's own web endpoints, which are undocumented and may change.
   - `sungrow-connect` and `sungrow-sync`: the same for a Sungrow iSolarCloud login (the region is found automatically). iSolarCloud's web login encrypts every request; see `_shared/sungrow.ts`. Synced every 15 minutes (`supabase/migrations/20261007000200_sungrow.sql`). Both portals share `_shared/portal-sync.ts`.
+  - `sigenergy-connect` and `sigenergy-sync`: the same for a mySigen login, through Sigenergy's documented OpenAPI (`_shared/sigenergy.ts`). If the OpenAPI refuses a login the mySigen app accepts, the account needs API access from developer.sigencloud.com. Synced every 15 minutes (`supabase/migrations/20261007000300_sigenergy.sql`).
   - `claude-connect` and `claude-ask`: a business connects its own Anthropic API key (stored encrypted), then Ask Claude answers questions from that business's fleet data, read with the asking person's own login.
   - `enphase-connect` and `enphase-sync`: Enphase OAuth and a sync every 15 minutes. These are written but not deployed until Orsym has Enphase developer keys.
 
@@ -52,4 +53,4 @@ npm run dev
   2. Set `ENPHASE_CLIENT_ID`, `ENPHASE_CLIENT_SECRET` and `ENPHASE_API_KEY` as edge function secrets.
   3. Deploy `enphase-connect` (with JWT verification off, because Enphase redirects to it) and `enphase-sync`.
   4. Run `supabase/cron.sql`.
-- **Not real yet:** emails to customers and contractors, the Fergus and Xero connections, and inverter brands other than GoodWe and Sungrow.
+- **Not real yet:** emails to customers and contractors, the Fergus and Xero connections, and inverter brands other than GoodWe, Sungrow and Sigenergy.

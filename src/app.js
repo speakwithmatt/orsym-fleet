@@ -395,7 +395,7 @@ function vConnections(){
     (x.name==="Claude"&&x.state==="Connected"?'<button class="btn sm" data-nav="claude" type="button">Ask Claude</button><span class="chip s-good">Connected</span>'+(CTX.role!=="member"?'<button class="btn sm" data-cldisconnect="1" type="button">Disconnect</button>':''):
      PORTALS[x.name]&&x.state!=="Not connected"?'<button class="btn sm" data-psync="'+x.name+'" type="button">Sync now</button>'+(x.state==="Reconnect needed"?'<button class="btn sm primary" data-connect="'+x.name+'" type="button">Reconnect</button>':'<span class="chip s-good">Connected</span>')+(CTX.role!=="member"?'<button class="btn sm" data-pdisconnect="'+x.name+'" type="button">Disconnect</button>':''):
      x.state==="Connected"?'<span class="chip s-good">Connected</span>':x.state==="Reconnect needed"?'<button class="btn sm primary" data-connect="'+esc(x.name)+'" type="button">Reconnect</button>':(x.name==="Claude"||PORTALS[x.name])?'<button class="btn sm primary" data-connect="'+esc(x.name)+'" type="button">Connect</button>':'<span class="chip plain muted">Coming soon</span>')+'</span></div>'};
-  return head("Connections","Orsym Solar System reads from the tools you already use. GoodWe, Sungrow and Claude are live; Sigenergy is next.")+
+  return head("Connections","Orsym Solar System reads from the tools you already use. GoodWe, Sungrow, Sigenergy and Claude are live.")+
   '<div class="grid g-2e"><section class="card"><div class="card-h"><h2>Inverter portals</h2></div><div style="margin-top:6px">'+inv.map(card).join("")+'</div></section><section class="card"><div class="card-h"><h2>Software</h2></div><div style="margin-top:6px">'+other.map(card).join("")+'</div></section></div>';
 }
 
@@ -499,7 +499,8 @@ function openAddSys(){
 // Inverter portals connected with the installer's own portal login.
 const PORTALS={
   GoodWe:{portal:"SEMS",hint:"Sign in with the SEMS account you use to see your customers\' GoodWe systems.",tip:"Best practice: in SEMS, create a read-only visitor account for Solar System rather than using your main login."},
-  Sungrow:{portal:"iSolarCloud",hint:"Sign in with the iSolarCloud installer account you use to see your customers\' Sungrow systems.",tip:"Use the same email and password as the iSolarCloud app or website. Solar System finds which region your account is on."}
+  Sungrow:{portal:"iSolarCloud",hint:"Sign in with the iSolarCloud installer account you use to see your customers\' Sungrow systems.",tip:"Use the same email and password as the iSolarCloud app or website. Solar System finds which region your account is on."},
+  Sigenergy:{portal:"mySigen",hint:"Sign in with the mySigen installer account you use to see your customers\' Sigenergy systems.",tip:"Use the same email and password as the mySigen app. Sigenergy may need to give your account API access first (developer.sigencloud.com); Solar System will tell you if so."}
 };
 function openPortal(name){
   const p=PORTALS[name];
