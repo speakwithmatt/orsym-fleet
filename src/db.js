@@ -174,9 +174,11 @@ async function call(fn, body) {
   }
   return r.data;
 }
-export const connectGoodWe = (orgId, account, password) => call("goodwe-connect", { org_id: orgId, account, password });
-export const disconnectGoodWe = orgId => call("goodwe-connect", { org_id: orgId, action: "disconnect" });
-export const syncGoodWe = orgId => call("goodwe-sync", { org_id: orgId });
+// Inverter portals: GoodWe → goodwe-connect / goodwe-sync, and so on.
+const slug = name => name.toLowerCase();
+export const connectPortal = (name, orgId, account, password) => call(slug(name) + "-connect", { org_id: orgId, account, password });
+export const disconnectPortal = (name, orgId) => call(slug(name) + "-connect", { org_id: orgId, action: "disconnect" });
+export const syncPortal = (name, orgId) => call(slug(name) + "-sync", { org_id: orgId });
 export const connectClaude = (orgId, key) => call("claude-connect", { org_id: orgId, key });
 export const disconnectClaude = orgId => call("claude-connect", { org_id: orgId, action: "disconnect" });
 export const askClaude = (orgId, messages) => call("claude-ask", { org_id: orgId, messages });
