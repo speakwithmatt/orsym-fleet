@@ -5,19 +5,16 @@ import { esc } from "./util.js";
 
 const gate = document.getElementById("gate");
 const shell = document.getElementById("shell");
-const LOGO = '<div class="logo"><svg viewBox="8 8 112 102" aria-hidden="true"><use href="#mark"/></svg>Orsym<small>Fleet</small></div>';
+const LOGO = '<div class="logo"><svg viewBox="8 8 112 102" aria-hidden="true"><use href="#mark"/></svg>Orsym<small>Solar System</small></div>';
 const ORG_KEY = "orsym-fleet-org";
 
 function showGate(html) { shell.hidden = true; gate.hidden = false; gate.innerHTML = '<div class="gate-card">' + LOGO + html + "</div>" }
 
 function signInScreen(msg) {
   showGate(
-    "<h1>Sign in to Orsym Fleet</h1><p>Use your work email. We'll send you a link, no password needed.</p>" +
+    "<h1>Sign in to Orsym Solar System</h1><p>Use your work email. We'll send you a link, no password needed.</p>" +
     (msg ? '<div class="okmsg">' + esc(msg) + "</div>" : "") +
     '<form id="emailForm"><input class="input" id="email" type="email" required autocomplete="email" placeholder="you@business.co.nz" aria-label="Email"><button class="btn primary" type="submit">Email me a sign-in link</button></form>' +
-    '<div class="or">or</div>' +
-    '<button class="btn" data-oauth="google" type="button">Continue with Google</button>' +
-    '<button class="btn" data-oauth="azure" type="button">Continue with Microsoft</button>' +
     '<p class="err" id="err"></p>'
   );
   document.getElementById("emailForm").onsubmit = async e => {
@@ -33,7 +30,7 @@ function signInScreen(msg) {
 
 function createOrgScreen(user) {
   showGate(
-    "<h1>Set up your business</h1><p>Signed in as " + esc(user.email) + ". If your team already uses Orsym Fleet, ask them to invite this email instead.</p>" +
+    "<h1>Set up your business</h1><p>Signed in as " + esc(user.email) + ". If your team already uses Orsym Solar System, ask them to invite this email instead.</p>" +
     '<form id="orgForm"><label class="fld"><span>Business name</span><input class="input" id="orgname-in" required maxlength="120" placeholder="Kōwhai Solar &amp; Electrical"></label>' +
     '<label class="fld"><span>Region (optional)</span><input class="input" id="region-in" placeholder="Waikato"></label>' +
     '<button class="btn primary" type="submit">Create</button></form>' +

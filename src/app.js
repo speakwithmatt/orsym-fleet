@@ -1,4 +1,4 @@
-// Orsym Fleet app: the screens from the clickable demo, now reading from and
+// Orsym Solar System app: the screens from the clickable demo, now reading from and
 // writing to Supabase for the signed-in installer business.
 import { DAY, startOfDay, addDays, addMonths, daysBetween, sevRank, fmtDate, fmtShort, money, esc } from "./util.js";
 import * as db from "./db.js";
@@ -344,7 +344,7 @@ function schedPreview(){
     "",
     f.p.kind==="contractor"?"Reply YES to confirm or suggest another time. The service checklist and report form are at the link below.":"The checklist and report form are on the job in Fergus.",
     "",
-    esc(CTX.org.name)+", via Orsym Fleet"
+    esc(CTX.org.name)+", via Orsym Solar System"
   ];
   document.getElementById("sf-preview").textContent=lines.join("\n");
   document.getElementById("sf-prev-label").textContent=f.via.includes("email")?"Email preview":"Job details";
@@ -395,7 +395,7 @@ function vConnections(){
     (x.name==="Claude"&&x.state==="Connected"?'<button class="btn sm" data-nav="claude" type="button">Ask Claude</button><span class="chip s-good">Connected</span>'+(CTX.role!=="member"?'<button class="btn sm" data-cldisconnect="1" type="button">Disconnect</button>':''):
      x.name==="GoodWe"&&x.state!=="Not connected"?'<button class="btn sm" data-gwsync="1" type="button">Sync now</button>'+(x.state==="Reconnect needed"?'<button class="btn sm primary" data-connect="GoodWe" type="button">Reconnect</button>':'<span class="chip s-good">Connected</span>')+(CTX.role!=="member"?'<button class="btn sm" data-gwdisconnect="1" type="button">Disconnect</button>':''):
      x.state==="Connected"?'<span class="chip s-good">Connected</span>':x.state==="Reconnect needed"?'<button class="btn sm primary" data-connect="'+esc(x.name)+'" type="button">Reconnect</button>':(x.name==="Claude"||x.name==="GoodWe")?'<button class="btn sm primary" data-connect="'+esc(x.name)+'" type="button">Connect</button>':'<span class="chip plain muted">Coming soon</span>')+'</span></div>'};
-  return head("Connections","Orsym Fleet reads from the tools you already use. GoodWe and Claude are live; Sungrow and Sigenergy are next.")+
+  return head("Connections","Orsym Solar System reads from the tools you already use. GoodWe and Claude are live; Sungrow and Sigenergy are next.")+
   '<div class="grid g-2e"><section class="card"><div class="card-h"><h2>Inverter portals</h2></div><div style="margin-top:6px">'+inv.map(card).join("")+'</div></section><section class="card"><div class="card-h"><h2>Software</h2></div><div style="margin-top:6px">'+other.map(card).join("")+'</div></section></div>';
 }
 
@@ -425,7 +425,7 @@ function claudeConn(){ return D.conns.find(c=>c.name==="Claude") }
 function vClaude(){
   const c=claudeConn(), on=c&&c.state==="Connected";
   if(!on) return head("Ask Claude","Ask questions about your fleet in plain English, or get Claude to draft customer messages.")+
-    '<section class="card" style="padding:22px;display:grid;gap:12px;max-width:620px"><h2>Connect Claude to get started</h2><p class="muted">'+(c&&c.state==="Reconnect needed"?"Claude's API key stopped working. Connect it again with a current key.":"Claude reads your systems, alerts, jobs and plans, and answers using only what you can see in Fleet.")+'</p>'+
+    '<section class="card" style="padding:22px;display:grid;gap:12px;max-width:620px"><h2>Connect Claude to get started</h2><p class="muted">'+(c&&c.state==="Reconnect needed"?"Claude's API key stopped working. Connect it again with a current key.":"Claude reads your systems, alerts, jobs and plans, and answers using only what you can see in Solar System.")+'</p>'+
     (CTX.role!=="member"?'<div><button class="btn primary" data-connect="Claude" type="button">Connect Claude</button></div>':'<p class="hint">Ask an owner or admin to connect Claude under Connections.</p>')+'</section>';
   const msgs=CHAT.map(m=>m.role==="user"?'<div class="msg me">'+esc(m.content).replace(/\n/g,"<br>")+'</div>':'<div class="msg ai'+(m.error?' err':'')+'">'+(m.error?esc(m.content):md(m.content))+'</div>').join("")+
     (ASKING?'<div class="msg ai thinking" aria-live="polite">Claude is looking through your fleet…</div>':'');
@@ -444,7 +444,7 @@ function scrollChat(){ const l=document.getElementById("chatlog"); if(l) l.scrol
 function openClaude(){
   document.getElementById("drawer-root").innerHTML='<div class="scrim" data-close="1"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="Connect Claude"><div class="dr-head"><div class="top"><div><h1 style="font-size:1.3rem">Connect Claude</h1><p class="muted">Paste an API key from your Anthropic account. Your whole team can then use Ask Claude, and usage is billed to that account.</p></div><button class="x" data-close="1" type="button" aria-label="Close">×</button></div></div>'+
   '<form class="dr-body" id="clForm" style="display:grid;gap:10px"><label class="fld"><span>Anthropic API key</span><input class="input" id="cl-key" type="password" required autocomplete="off" placeholder="sk-ant-…"></label>'+
-  '<p class="hint">Create one at console.anthropic.com under API keys. The key is encrypted and only Fleet\'s server can read it.</p>'+
+  '<p class="hint">Create one at console.anthropic.com under API keys. The key is encrypted and only Solar System\'s server can read it.</p>'+
   '<div class="acts-row"><button class="btn primary" type="submit">Connect</button><button class="btn" data-close="1" type="button">Cancel</button></div><p class="err" id="cl-err"></p></form></aside>';
   document.getElementById("cl-key").focus();
 }
@@ -497,9 +497,9 @@ function openAddSys(){
   document.getElementById("as-name").focus();
 }
 function openGoodWe(){
-  document.getElementById("drawer-root").innerHTML='<div class="scrim" data-close="1"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="Connect GoodWe"><div class="dr-head"><div class="top"><div><h1 style="font-size:1.3rem">Connect GoodWe</h1><p class="muted">Sign in with the SEMS account you use to see your customers\' GoodWe systems. Every plant on it comes into Fleet and refreshes every 15 minutes.</p></div><button class="x" data-close="1" type="button" aria-label="Close">×</button></div></div>'+
+  document.getElementById("drawer-root").innerHTML='<div class="scrim" data-close="1"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="Connect GoodWe"><div class="dr-head"><div class="top"><div><h1 style="font-size:1.3rem">Connect GoodWe</h1><p class="muted">Sign in with the SEMS account you use to see your customers\' GoodWe systems. Every plant on it comes into Solar System and refreshes every 15 minutes.</p></div><button class="x" data-close="1" type="button" aria-label="Close">×</button></div></div>'+
   '<form class="dr-body" id="gwForm" style="display:grid;gap:10px"><label class="fld"><span>SEMS email</span><input class="input" id="gw-account" type="email" required autocomplete="off"></label><label class="fld"><span>SEMS password</span><input class="input" id="gw-password" type="password" required autocomplete="new-password"></label>'+
-  '<p class="hint">Best practice: in SEMS, create a read-only visitor account for Fleet rather than using your main login. The password is encrypted and only Fleet\'s server can read it.</p>'+
+  '<p class="hint">Best practice: in SEMS, create a read-only visitor account for Solar System rather than using your main login. The password is encrypted and only Solar System\'s server can read it.</p>'+
   '<div class="acts-row"><button class="btn primary" type="submit">Connect</button><button class="btn" data-close="1" type="button">Cancel</button></div><p class="err" id="gw-err"></p></form></aside>';
   document.getElementById("gw-account").focus();
 }
@@ -630,7 +630,7 @@ function onClick(e){
   if(d.clnew){ CHAT.length=0; render(); return }
   if(d.cldisconnect){ if(!confirm("Disconnect Claude? Ask Claude stops working until it's connected again.")) return; busy(t,"…",async()=>{ await db.disconnectClaude(CTX.org.id); await reload(); render(true); toast("Claude disconnected") }); return }
   if(d.gwsync){ busy(t,"Syncing…",async()=>{ const r=await db.syncGoodWe(CTX.org.id); if(r&&r.error) throw new Error(r.error); await reload(); render(true); toast("GoodWe synced: "+(r.stations??0)+" systems"+(r.created?", "+r.created+" new":"")) }); return }
-  if(d.gwdisconnect){ if(!confirm("Disconnect GoodWe? Systems already pulled in stay in Fleet but stop updating.")) return; busy(t,"…",async()=>{ await db.disconnectGoodWe(CTX.org.id); await reload(); render(true); toast("GoodWe disconnected") }); return }
+  if(d.gwdisconnect){ if(!confirm("Disconnect GoodWe? Systems already pulled in stay in Solar System but stop updating.")) return; busy(t,"…",async()=>{ await db.disconnectGoodWe(CTX.org.id); await reload(); render(true); toast("GoodWe disconnected") }); return }
   if(d.connect){ toast(d.connect+" is coming soon"); return }
   if(d.sample){ busy(t,"Loading sample data…",async()=>{ await loadSample(); toast(D.systems.length+" sample systems loaded"); render() }); return }
   if(d.clearsample){ if(!confirm("Remove all sample systems, alerts, jobs and contractors?")) return; busy(t,"Clearing…",async()=>{ await db.clearSample(CTX.org.id); await reload(); toast("Sample data cleared"); render() }); return }
