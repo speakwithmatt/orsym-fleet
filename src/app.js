@@ -391,8 +391,9 @@ function vConnections(){
   const inv=c.filter(x=>x.kind==="Inverter portal"), other=c.filter(x=>x.kind!=="Inverter portal");
   const count=n=>D.systems.filter(s=>s.brand===n&&s.source!=="sample").length;
   const card=x=>{const n=x.kind==="Inverter portal"?count(x.name):null; return '<div class="conn"><span class="mark">'+esc(x.name.replace(/[^A-Za-z]/g,"").slice(0,2))+'</span><span style="min-width:0"><b style="color:var(--ink)">'+esc(x.name)+'</b><span class="muted" style="display:block;font-size:.78rem">'+esc(x.kind)+(n!=null?' · '+n+' systems':'')+(x.syncedAt?' · last sync '+rel(x.syncedAt):'')+(x.error?' · '+esc(x.error):'')+'</span></span><span class="acts-row">'+
-    (x.state==="Connected"?'<span class="chip s-good">Connected</span>':x.state==="Reconnect needed"?'<button class="btn sm primary" data-connect="'+esc(x.name)+'" type="button">Reconnect</button>':x.name==="Enphase"?'<button class="btn sm primary" data-connect="Enphase" type="button">Connect</button>':'<span class="chip plain muted">Coming soon</span>')+'</span></div>'};
-  return head("Connections","Orsym Fleet reads from the tools you already use. Enphase is first; the other portals follow as API access is set up.")+
+    (x.name==="GoodWe"&&x.state!=="Not connected"?'<button class="btn sm" data-gwsync="1" type="button">Sync now</button>'+(x.state==="Reconnect needed"?'<button class="btn sm primary" data-connect="GoodWe" type="button">Reconnect</button>':'<span class="chip s-good">Connected</span>')+(CTX.role!=="member"?'<button class="btn sm" data-gwdisconnect="1" type="button">Disconnect</button>':''):
+     x.state==="Connected"?'<span class="chip s-good">Connected</span>':x.state==="Reconnect needed"?'<button class="btn sm primary" data-connect="'+esc(x.name)+'" type="button">Reconnect</button>':(x.name==="Enphase"||x.name==="GoodWe")?'<button class="btn sm primary" data-connect="'+esc(x.name)+'" type="button">Connect</button>':'<span class="chip plain muted">Coming soon</span>')+'</span></div>'};
+  return head("Connections","Orsym Fleet reads from the tools you already use. GoodWe is live; other portals follow as API access is set up.")+
   '<div class="grid g-2e"><section class="card"><div class="card-h"><h2>Inverter portals</h2></div><div style="margin-top:6px">'+inv.map(card).join("")+'</div></section><section class="card"><div class="card-h"><h2>Accounting and jobs</h2></div><div style="margin-top:6px">'+other.map(card).join("")+'</div></section></div>';
 }
 
@@ -442,6 +443,13 @@ function openAddSys(){
   fld("model","Inverter model")+fld("serial","Inverter serial")+fld("kw","System size (kW)","number",' step="0.1" min="0" required')+fld("installed","Install date","date")+sel("plan","Service plan",["None","Monitor","Care","Commercial"])+
   '<div class="acts-row"><button class="btn primary" type="submit">Save system</button><button class="btn" data-close="1" type="button">Cancel</button></div></form></aside>';
   document.getElementById("as-name").focus();
+}
+function openGoodWe(){
+  document.getElementById("drawer-root").innerHTML='<div class="scrim" data-close="1"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="Connect GoodWe"><div class="dr-head"><div class="top"><div><h1 style="font-size:1.3rem">Connect GoodWe</h1><p class="muted">Sign in with the SEMS account you use to see your customers\' GoodWe systems. Every plant on it comes into Fleet and refreshes every 15 minutes.</p></div><button class="x" data-close="1" type="button" aria-label="Close">×</button></div></div>'+
+  '<form class="dr-body" id="gwForm" style="display:grid;gap:10px"><label class="fld"><span>SEMS email</span><input class="input" id="gw-account" type="email" required autocomplete="off"></label><label class="fld"><span>SEMS password</span><input class="input" id="gw-password" type="password" required autocomplete="new-password"></label>'+
+  '<p class="hint">Best practice: in SEMS, create a read-only visitor account for Fleet rather than using your main login. The password is encrypted and only Fleet\'s server can read it.</p>'+
+  '<div class="acts-row"><button class="btn primary" type="submit">Connect</button><button class="btn" data-close="1" type="button">Cancel</button></div><p class="err" id="gw-err"></p></form></aside>';
+  document.getElementById("gw-account").focus();
 }
 function parseCSV(text){
   const rows=[]; let row=[], f="", q=false;
@@ -564,6 +572,9 @@ function onClick(e){
   if(d.offer){ const s=byId(d.offer); s.offer=TODAY; toast("Marked plan offer as sent to "+s.contact+" (prototype: no email sent yet)"); render(true); return }
   if(d.offerall){ const l=D.systems.filter(s=>s.plan==="None"&&s.status!=="Offline"&&!s.offer).sort((a,b)=>b.kw-a.kw).slice(0,10); l.forEach(s=>s.offer=TODAY); toast(l.length+" plan offers marked as sent (prototype: no email sent yet)"); render(true); return }
   if(d.book){ const s=byId(d.book); const j=newJob(s,s.type==="Commercial"?"Commercial service + report":"Annual clean and check",s.type==="Commercial"?"commercial":"annual",addDays(TODAY,14)); render(true); openSched(j.id); return }
+  if(d.connect==="GoodWe"){ openGoodWe(); return }
+  if(d.gwsync){ busy(t,"Syncing…",async()=>{ const r=await db.syncGoodWe(CTX.org.id); if(r&&r.error) throw new Error(r.error); await reload(); render(true); toast("GoodWe synced: "+(r.stations??0)+" systems"+(r.created?", "+r.created+" new":"")) }); return }
+  if(d.gwdisconnect){ if(!confirm("Disconnect GoodWe? Systems already pulled in stay in Fleet but stop updating.")) return; busy(t,"…",async()=>{ await db.disconnectGoodWe(CTX.org.id); await reload(); render(true); toast("GoodWe disconnected") }); return }
   if(d.connect){ if(d.connect!=="Enphase"){ toast(d.connect+" is coming soon"); return } busy(t,"Opening…",async()=>{ const r=await db.startEnphase(CTX.org.id); if(r&&r.url) location.href=r.url; else toast("Enphase isn't set up on the server yet") }).catch(()=>{}); return }
   if(d.sample){ busy(t,"Loading sample data…",async()=>{ await loadSample(); toast(D.systems.length+" sample systems loaded"); render() }); return }
   if(d.clearsample){ if(!confirm("Remove all sample systems, alerts, jobs and contractors?")) return; busy(t,"Clearing…",async()=>{ await db.clearSample(CTX.org.id); await reload(); toast("Sample data cleared"); render() }); return }
@@ -582,6 +593,9 @@ function onSubmit(e){
   if(f.id==="addSysForm"){ busy(btn,"Saving…",async()=>{
     const s=newSystem({name:v("as-name"),address:v("as-address"),town:v("as-town"),phone:v("as-phone"),email:v("as-email"),type:v("as-type"),brand:v("as-brand"),model:v("as-model"),serial:v("as-serial"),kw:v("as-kw"),installed:v("as-installed"),plan:v("as-plan")});
     await db.saveSystems(CTX.org.id,[s]); D.systems.push(s); snapshot(); closeDrawer(); toast(s.name+" added"); S.view==="overview"?go("systems"):render(true) }); return }
+  if(f.id==="gwForm"){ btn.disabled=true; btn.textContent="Connecting…"; document.getElementById("gw-err").textContent="";
+    db.connectGoodWe(CTX.org.id,v("gw-account"),v("gw-password")).then(async r=>{ closeDrawer(); await reload(); go("systems"); toast("GoodWe connected: "+r.stations+" systems found") })
+      .catch(err=>{ document.getElementById("gw-err").textContent=err.message||String(err); btn.disabled=false; btn.textContent="Connect" }); return }
   if(f.id==="inviteForm"){ busy(btn,"Sending…",async()=>{ const email=v("inv-email"); const r=await db.invite(CTX.org.id,email,v("inv-role")); toast(r.emailed?"Invite emailed to "+email:"Invite saved. "+email+" gets access when they sign in with that email"); await refreshTeam() }); return }
   if(f.id==="personForm"){ busy(btn,"Adding…",async()=>{ const name=v("p-name").trim(), kind=v("p-kind"); let key=name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"person"; while(TEAM.some(p=>p.id===key)) key+="-2";
     const p={id:key,name,kind,role:kind==="team"?"Technician":"Contractor",cal:"Google Calendar",email:v("p-email").trim()}; await db.savePeople(CTX.org.id,[p]); TEAM.push(p); render(true); toast(name+" added") }); return }

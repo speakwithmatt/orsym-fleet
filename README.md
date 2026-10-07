@@ -12,6 +12,7 @@ This is the first live prototype. It's the clickable demo's screens running on r
   - Every table is locked to the installer business (`org_id`) with row level security.
 - **Edge functions** (`supabase/functions/`):
   - `invite-member`: sends team invites. It is deployed.
+  - `goodwe-connect` and `goodwe-sync`: an installer connects their GoodWe SEMS login (stored encrypted), and every plant on it is pulled into Systems with status and today's kWh. A cron job (`supabase/migrations/20261007000100_goodwe_cron.sql`) syncs every 15 minutes. These use the SEMS+ portal's own web endpoints, which are undocumented and may change.
   - `enphase-connect` and `enphase-sync`: Enphase OAuth and a sync every 15 minutes. These are written but not deployed until Orsym has Enphase developer keys.
 
 ## How it works
@@ -49,4 +50,4 @@ npm run dev
   2. Set `ENPHASE_CLIENT_ID`, `ENPHASE_CLIENT_SECRET` and `ENPHASE_API_KEY` as edge function secrets.
   3. Deploy `enphase-connect` (with JWT verification off, because Enphase redirects to it) and `enphase-sync`.
   4. Run `supabase/cron.sql`.
-- **Not real yet:** emails to customers and contractors, the Fergus and Xero connections, and the other inverter brands.
+- **Not real yet:** emails to customers and contractors, the Fergus and Xero connections, and inverter brands other than GoodWe.

@@ -163,3 +163,17 @@ export async function startEnphase(orgId) {
   if (r.error) throw new Error("Enphase connection isn't switched on yet. It needs Orsym's Enphase developer keys first.");
   return r.data; // { url }
 }
+
+// Edge function call that surfaces the function's own error message.
+async function call(fn, body) {
+  const r = await sb.functions.invoke(fn, { body });
+  if (r.error) {
+    let msg = r.error.message;
+    try { const j = await r.error.context.json(); if (j && j.error) msg = j.error } catch {}
+    throw new Error(msg);
+  }
+  return r.data;
+}
+export const connectGoodWe = (orgId, account, password) => call("goodwe-connect", { org_id: orgId, account, password });
+export const disconnectGoodWe = orgId => call("goodwe-connect", { org_id: orgId, action: "disconnect" });
+export const syncGoodWe = orgId => call("goodwe-sync", { org_id: orgId });
