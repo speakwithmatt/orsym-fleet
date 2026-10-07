@@ -17,12 +17,13 @@ export const credentials = (admin: SupabaseClient, orgId: string) => portalCrede
 export async function syncOrg(admin: SupabaseClient, orgId: string, gw: GoodWe) {
   const stations: Station[] = (await gw.stations()).map((st) => {
     const raw = first(st, "status", "stationStatus", "state");
-    const address = first(st, "address", "location", "stationAddress");
+    const address = first(st, "googleAddress", "address", "location", "stationAddress");
     const ext = String(first(st, "id", "stationId", "powerstation_id", "powerStationId") ?? "");
     return {
       ext, name: String(first(st, "name", "stationName", "stationname") ?? `GoodWe ${ext}`),
       address: address ? String(address) : null,
-      kw: num(first(st, "installedPower", "capacity", "pvCapacity", "installedCapacity")),
+      // SEMS+ fills pvInstallP (kW) and can leave installedPower at 0.
+      kw: [st.pvInstallP, st.installedPower, st.capacity, st.pvCapacity, st.installedCapacity].map(num).find((n) => n != null && n > 0) ?? null,
       todayKwh: num(first(st, "productionToday", "eday", "todayEnergy", "dayGeneration")),
       status: mapStatus(raw), raw: raw == null ? null : String(raw),
     };

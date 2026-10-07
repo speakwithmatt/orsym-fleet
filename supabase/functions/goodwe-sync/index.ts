@@ -19,6 +19,12 @@ Deno.serve(async (req) => {
   if (cron) {
     const { data } = await admin.from("internal_secrets").select("value").eq("name", "cron_secret").single();
     if (!data || data.value !== cron) return json({ error: "forbidden" }, 403);
+    // Diagnostic: the raw plant list for one org, to check field mapping.
+    if (body.inspect) {
+      const c = await credentials(admin, String(body.inspect));
+      if (!c) return json({ error: "not connected" });
+      return json(await new GoodWe(c.account, c.password).stations());
+    }
     const { data: rows } = await admin.from("connection_secrets").select("org_id").eq("provider", "GoodWe");
     orgIds = (rows ?? []).map((r) => r.org_id);
   } else {
